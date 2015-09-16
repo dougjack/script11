@@ -1,7 +1,8 @@
 # CAPCOG_PostPostProcess
 # Fix a problem caused by Script 10 putting ramp emissions for all counties in the 
-# ${offnetdbname}.${c}_movesoutput_zone_final table instead of just the ramp emissions
-# for county $c
+# ${offnetdbname}.${c}_movesoutput_zone_final table instead of just the ramp emissions 
+# for county $c.
+# Fix doubling of VMT problem.
 # DJackson, Eastern Research Group, 2015
 
 use warnings;
@@ -24,40 +25,40 @@ for my $c (@counties){
 	
 	$sql="
 
-	USE ${dbname};
-	
-	CREATE TABLE IF NOT EXISTS crosstabVMTdailyFixed LIKE crosstabVMTdaily;
-	TRUNCATE crosstabVMTdailyFixed;
-	INSERT INTO crosstabVMTdailyFixed SELECT * FROM crosstabVMTdaily;
-
-	UPDATE TABLE crosstabVMTdailyFixed SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
-		`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
-	WHERE roadTypeID NOT IN (8, 9);
+		USE ${dbname};
 		
-	create Table    if not exists ${dbname}.TotalsFixed
-	(
-		countyID		INTEGER  UNSIGNED NULL DEFAULT NULL,
-		fuelTypeID		INTEGER  UNSIGNED NULL DEFAULT NULL,
-		pollutantID		INTEGER  UNSIGNED NULL DEFAULT NULL,
-		emissKg			DOUBLE   UNSIGNED NULL DEFAULT NULL,
-		VMT				DOUBLE   UNSIGNED NULL DEFAULT NULL
-	) ENGINE=MyISAM DEFAULT CHARSET=latin1 DELAY_KEY_WRITE=1;
+		CREATE TABLE IF NOT EXISTS crosstabVMTdailyFixed LIKE crosstabVMTdaily;
+		TRUNCATE crosstabVMTdailyFixed;
+		INSERT INTO crosstabVMTdailyFixed SELECT * FROM crosstabVMTdaily;
 
-	truncate ${dbname}.TotalsFixed;
-	INSERT INTO ${dbname}.TotalsFixed
-	SELECT emiss.countyID, emiss.fuelTypeID, emiss.pollutantID, sum(IFNULL(`11`,0)+IFNULL(`21`,0)+IFNULL(`31`,0)+IFNULL(`32`,0)+IFNULL(`41`,0)+IFNULL(`42`,0)+
-												  IFNULL(`43`,0)+IFNULL(`51`,0)+IFNULL(`52`,0)+IFNULL(`53`,0)+IFNULL(`54`,0)+IFNULL(`61`,0)+
-												  IFNULL(`62`,0)) as EmissKg, myalias.VMT
-	FROM ${dbname}.crosstabemissdaily emiss JOIN
+		UPDATE TABLE crosstabVMTdailyFixed SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
+		WHERE roadTypeID NOT IN (8, 9);
+			
+		create Table    if not exists ${dbname}.TotalsFixed
+		(
+			countyID		INTEGER  UNSIGNED NULL DEFAULT NULL,
+			fuelTypeID		INTEGER  UNSIGNED NULL DEFAULT NULL,
+			pollutantID		INTEGER  UNSIGNED NULL DEFAULT NULL,
+			emissKg			DOUBLE   UNSIGNED NULL DEFAULT NULL,
+			VMT				DOUBLE   UNSIGNED NULL DEFAULT NULL
+		) ENGINE=MyISAM DEFAULT CHARSET=latin1 DELAY_KEY_WRITE=1;
 
-	(SELECT vmt.countyID, vmt.fuelTypeID, sum(IFNULL(`11`,0)+IFNULL(`21`,0)+IFNULL(`31`,0)+IFNULL(`32`,0)+IFNULL(`41`,0)+
-							  IFNULL(`42`,0)+IFNULL(`43`,0)+IFNULL(`51`,0)+IFNULL(`52`,0)+IFNULL(`53`,0)+
-							  IFNULL(`54`,0)+IFNULL(`61`,0)+IFNULL(`62`,0)) as VMT
-	FROM ${dbname}.crosstabVMTdailyFixed vmt
-	group by countyID, fuelTypeID) myalias 
+		truncate ${dbname}.TotalsFixed;
+		INSERT INTO ${dbname}.TotalsFixed
+		SELECT emiss.countyID, emiss.fuelTypeID, emiss.pollutantID, sum(IFNULL(`11`,0)+IFNULL(`21`,0)+IFNULL(`31`,0)+IFNULL(`32`,0)+IFNULL(`41`,0)+IFNULL(`42`,0)+
+													  IFNULL(`43`,0)+IFNULL(`51`,0)+IFNULL(`52`,0)+IFNULL(`53`,0)+IFNULL(`54`,0)+IFNULL(`61`,0)+
+													  IFNULL(`62`,0)) as EmissKg, myalias.VMT
+		FROM ${dbname}.crosstabemissdaily emiss JOIN
 
-	ON emiss.countyid=myalias.countyid and emiss.fuelTypeID=myalias.fuelTypeID
-	group by countyID, fuelTypeID, pollutantID;
+		(SELECT vmt.countyID, vmt.fuelTypeID, sum(IFNULL(`11`,0)+IFNULL(`21`,0)+IFNULL(`31`,0)+IFNULL(`32`,0)+IFNULL(`41`,0)+
+								  IFNULL(`42`,0)+IFNULL(`43`,0)+IFNULL(`51`,0)+IFNULL(`52`,0)+IFNULL(`53`,0)+
+								  IFNULL(`54`,0)+IFNULL(`61`,0)+IFNULL(`62`,0)) as VMT
+		FROM ${dbname}.crosstabVMTdailyFixed vmt
+		group by countyID, fuelTypeID) myalias 
+
+		ON emiss.countyid=myalias.countyid and emiss.fuelTypeID=myalias.fuelTypeID
+		group by countyID, fuelTypeID, pollutantID;
 
 	";
 	open(out1,">script.sql");
@@ -107,6 +108,15 @@ for my $c (@counties){
 		INSERT INTO ${summdb}.CrossTabVMTDailySummary SELECT * FROM ${dbname}.CrossTabVMTDaily WHERE countyID=${c};
 		INSERT INTO ${summdb}.SummaryTotals SELECT * FROM ${dbname}.TotalsFixed WHERE countyID=${c};
 		INSERT INTO ${summdb}.linkSummaryTotals SELECT * FROM ${dbname}.linkTotals WHERE countyID=${c};
+		
+		-- Fix the non-ramp VMT, which was inadvertently doubled.
+		UPDATE TABLE CrossTabVMTHourlySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
+		WHERE roadTypeID NOT IN (8, 9);
+		
+		UPDATE TABLE CrossTabVMTDailySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
+		WHERE roadTypeID NOT IN (8, 9);
 	";
 
 	open(out1,">script.sql");
