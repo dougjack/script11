@@ -14,7 +14,7 @@ print "\n";
 
 # assign the variables
 my $countylist = "48021,48053,48055,48209,48453,48491";
-my $dbroot = "CAPCOG_2012_SUMMER_SA_14sep15";
+my $dbroot = "CAPCOG_2012_SUMMER_SU_15sep15";
 my $localoutpath = "C:\\SEE\\LocalGen\\";
 
 @counties = split(/,/, $countylist);
@@ -31,7 +31,7 @@ for my $c (@counties){
 		TRUNCATE crosstabVMTdailyFixed;
 		INSERT INTO crosstabVMTdailyFixed SELECT * FROM crosstabVMTdaily;
 
-		UPDATE TABLE crosstabVMTdailyFixed SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+		UPDATE crosstabVMTdailyFixed SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
 			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
 		WHERE roadTypeID NOT IN (8, 9);
 			
@@ -110,11 +110,11 @@ for my $c (@counties){
 		INSERT INTO ${summdb}.linkSummaryTotals SELECT * FROM ${dbname}.linkTotals WHERE countyID=${c};
 		
 		-- Fix the non-ramp VMT, which was inadvertently doubled.
-		UPDATE TABLE CrossTabVMTHourlySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+		UPDATE CrossTabVMTHourlySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
 			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
 		WHERE roadTypeID NOT IN (8, 9);
 		
-		UPDATE TABLE CrossTabVMTDailySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+		UPDATE CrossTabVMTDailySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
 			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
 		WHERE roadTypeID NOT IN (8, 9);
 	";
