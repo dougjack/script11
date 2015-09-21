@@ -123,6 +123,8 @@ for my $c (@counties){
 	print out1 $sql;
 	close(out1);
 	`mysql --defaults-extra-file=user.cnf < script.sql`;
+	
+	print "County ${c} summaries created at ".(localtime),"\n";
 }
 
 print "\n";
