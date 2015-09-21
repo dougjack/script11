@@ -102,6 +102,7 @@ close(out1);
 for my $c (@counties){
 	$dbname = "${dbroot}_${c}";
 	$sql="
+		use ${summdb};
 		INSERT INTO ${summdb}.CrossTabEmissHourlySummary SELECT * FROM ${dbname}.CrossTabEmissHourly WHERE countyID=${c};
 		INSERT INTO ${summdb}.CrossTabEmissDailySummary SELECT * FROM ${dbname}.CrossTabEmissDaily WHERE countyID=${c};
 		INSERT INTO ${summdb}.CrossTabVMTHourlySummary SELECT * FROM ${dbname}.CrossTabVMTHourly WHERE countyID=${c};
