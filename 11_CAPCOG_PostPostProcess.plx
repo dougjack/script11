@@ -14,7 +14,7 @@ print "\n";
 
 # assign the variables
 my $countylist = "48021,48053,48055,48209,48453,48491";
-my $dbroot = "CAPCOG_2012_SUMMER_SU_15sep15";
+my $dbroot = "capcog_2018_school_wk_02sep15";
 
 @counties = split(/,/, $countylist);
 
