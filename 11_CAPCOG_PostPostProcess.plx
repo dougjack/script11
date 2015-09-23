@@ -18,6 +18,7 @@ my $dbroot = "capcog_2018_school_wk_02sep15";
 
 @counties = split(/,/, $countylist);
 
+print "Starting VMT and ramp emissions repair script for ${dbroot} at ".(localtime),"\n";
 for my $c (@counties){
 
 	$dbname = "${dbroot}_${c}";
@@ -108,15 +109,6 @@ for my $c (@counties){
 		INSERT INTO ${summdb}.CrossTabVMTDailySummary SELECT * FROM ${dbname}.CrossTabVMTDaily WHERE countyID=${c};
 		INSERT INTO ${summdb}.SummaryTotals SELECT * FROM ${dbname}.TotalsFixed WHERE countyID=${c};
 		INSERT INTO ${summdb}.linkSummaryTotals SELECT * FROM ${dbname}.linkTotals WHERE countyID=${c};
-		
-		-- Fix the non-ramp VMT, which was inadvertently doubled.
-		UPDATE CrossTabVMTHourlySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
-			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
-		WHERE roadTypeID NOT IN (8, 9);
-		
-		UPDATE CrossTabVMTDailySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
-			`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
-		WHERE roadTypeID NOT IN (8, 9);
 	";
 
 	open(out1,">script.sql");
@@ -126,6 +118,24 @@ for my $c (@counties){
 	
 	print "County ${c} summaries created at ".(localtime),"\n";
 }
+
+$sql="
+	use ${summdb};
+	
+	-- Fix the non-ramp VMT, which was inadvertently doubled.
+	UPDATE CrossTabVMTHourlySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+		`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
+	WHERE roadTypeID NOT IN (8, 9);
+	
+	UPDATE CrossTabVMTDailySummary SET `11`=`11`/2, `21`=`21`/2,`31`=`31`/2, `32`=`32`/2, `41`=`41`/2, 
+		`42`=`42`/2, `43`=`43`/2, `51`=`51`/2, `52`=`52`/2, `53`=`53`/2, `54`=`54`/2, `61`=`61`/2, `62`=`62`/2
+	WHERE roadTypeID NOT IN (8, 9);
+";
+open(out1,">script.sql");
+print out1 $sql;
+close(out1);
+`mysql --defaults-extra-file=user.cnf < script.sql`;
+print "Cut crosstabVMT in half at ".(localtime),"\n";
 
 print "\n";
 print "Finished SCRIPT 11 at ".(localtime),"\n"; 
