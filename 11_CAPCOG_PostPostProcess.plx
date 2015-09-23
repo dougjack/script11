@@ -19,6 +19,7 @@ my $localoutpath = "C:\\SEE\\LocalGen\\";
 
 @counties = split(/,/, $countylist);
 
+print "Starting VMT and ramp emissions repair script for ${dbroot} at ".(localtime),"\n";
 for my $c (@counties){
 
 	$dbname = "${dbroot}_${c}";
